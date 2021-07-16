@@ -16,6 +16,7 @@ import ru.smart.simplestatemachine.ui.statemachine.base.StateMachine
 import ru.smart.simplestatemachine.ui.statemachine.base.createHandler
 import ru.smart.simplestatemachine.ui.statemachine.transitions.InitToNext
 import ru.smart.simplestatemachine.ui.statemachine.transitions.StartToInit
+import ru.smart.simplestatemachine.ui.statemachine.transitions.StartToNext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -37,6 +38,12 @@ class ViewModel @Inject constructor(
         }
     }
 
+    private val startToNextHandler = handle<State.Start, State.Next>(transitionChangeErrorHandler) { s, ts ->
+        ViewState.NextViewState("next") {
+            sendEvent(Event.OnNext())
+        }
+    }
+
     private val initToNextHandler = handle<State.Init, State.Next>(transitionChangeErrorHandler) { s, ts ->
         ViewState.NextViewState("next") {
             restartStateMachine()
@@ -49,9 +56,10 @@ class ViewModel @Inject constructor(
         stateMachine.addExecutingStateListener { loadingState.post(it == StateMachine.ExecutingState.EXECUTING) }
 
         stateBuilder<State.Start> {
-            next(StartToInit(viewModelScope), startToInitHandler) {
-                next(InitToNext(viewModelScope), initToNextHandler) {}
+            this.next(StartToInit(viewModelScope), startToInitHandler) {
+                this.next(InitToNext(viewModelScope), initToNextHandler) {}
             }
+            this.next(StartToNext(viewModelScope), startToNextHandler) {}
         }.build(stateMachine)
 
         sendEvent(Event.OnInit())
@@ -93,7 +101,7 @@ class StatesBuilder {
     inner class TransitionBuilder<InS : State> {
 
         inline fun <reified IS : InS, reified NextState : State, reified E : Event> next(
-            transitionTo: TransitionTo<IS, NextState, E>,
+            transitionTo: TransitionTo<InS, NextState, E>,
             transitionHandler: TransitionHandler<IS, NextState>? = null,
             initializer: TransitionBuilder<NextState>.() -> Unit
         ) {

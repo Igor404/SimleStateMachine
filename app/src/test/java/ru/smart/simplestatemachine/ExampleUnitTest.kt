@@ -1,4 +1,4 @@
-package com.example.simplestatemachine
+package ru.smart.simplestatemachine
 
 import org.junit.Test
 
